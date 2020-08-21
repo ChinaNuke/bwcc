@@ -17,7 +17,8 @@ int main(){
 
 parser = CParser()
 ast = parser.parse(data)
-ast.show(attrnames=True, nodenames=True)
+# ast.show(attrnames=True, nodenames=True)
+print(ast.toString(attrnames=True, nodenames=True))
 
 translator = CTranslator()
 translator.visit(ast)

@@ -21,6 +21,8 @@ class MCode(object):
         return '({}, {}, {}, {})'.format(self.op, self.arg1 if self.arg1 != None else '-',
                                          self.arg2 if self.arg2 != None else '-',
                                          self.result if self.result != None else '-')
+    def __str__(self):
+        return self.__repr__()
 
 
 class CTranslator(object):
@@ -198,6 +200,15 @@ class CTranslator(object):
         beginlabel = self._newlabel()
         truelabel = self._newlabel()
         falselabel = self._newlabel()
+        """
+                ...(initialize)
+        begin:  j>, x, 0, true
+                j false
+        true:   ...
+                ...(next)
+                j begin
+        false:
+        """
         self.visit(node.init)  # 跟 While 就差在这
         self._emitlabel(beginlabel)
         self._emitbranch(node.cond, truelabel, falselabel)

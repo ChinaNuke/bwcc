@@ -1,18 +1,21 @@
 import sys
+
+from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QGridLayout, QPushButton, QLabel, QTextEdit, \
     QVBoxLayout, QHBoxLayout, QGroupBox, QFileDialog
 from c_parser import CParser
 from c_translator import CTranslator
 from c_assembler import CAssembler
+import os
 
 class BWCC(QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super(BWCC, self).__init__(*args, **kwargs)
         self.initUI()
-        self.parser = CParser()
-        self.translator = CTranslator
-        self.assembler = CAssembler
+        # self.parser = CParser()
+        # self.translator = CTranslator
+        # self.assembler = CAssembler
 
     def initUI(self):
         layout = QVBoxLayout()
@@ -27,14 +30,21 @@ class BWCC(QMainWindow):
         vb3 = QVBoxLayout()
         vb4 = QVBoxLayout()
         vb5 = QVBoxLayout()
+        font = QtGui.QFont()
+        font.setFamily("Consolas");
+        font.setPointSize(11);
         self.textSrc = QTextEdit()
         self.textSrc.setLineWrapMode(QTextEdit.NoWrap)
+        self.textSrc.setFont(font);
         self.textAST = QTextEdit()
         self.textAST.setLineWrapMode(QTextEdit.NoWrap)
+        self.textAST.setFont(font)
         self.textCode = QTextEdit()
         self.textCode.setLineWrapMode(QTextEdit.NoWrap)
+        self.textCode.setFont(font)
         self.textAsm = QTextEdit()
         self.textAsm.setLineWrapMode(QTextEdit.NoWrap)
+        self.textAsm.setFont(font)
         vb1.addWidget(QLabel(' 源程序代码'))
         vb1.addWidget(self.textSrc)
         vb2.addWidget(QLabel(' AST'))
@@ -45,6 +55,7 @@ class BWCC(QMainWindow):
         vb4.addWidget(self.textAsm)
         self.textResult = QTextEdit()
         self.textResult.setLineWrapMode(QTextEdit.NoWrap)
+        self.textResult.setFont(font)
         vb5.addWidget(QLabel(' 运行结果'))
         vb5.addWidget(self.textResult)
 
@@ -67,6 +78,7 @@ class BWCC(QMainWindow):
 
         btnOpen.clicked.connect(self.openfile)
         btnCompile.clicked.connect(self.compile)
+        btnRun.clicked.connect(self.run)
 
         widget = QWidget()
         widget.setLayout(layout)
@@ -83,11 +95,33 @@ class BWCC(QMainWindow):
             with open(filename[0], 'r') as f:
                 src = f.read()
                 self.textSrc.setText(src)
+        self.statusBar().showMessage('已打开文件：' + filename[0])
 
     def compile(self):
-        # self.textAsm.setText(self.textSrc.toPlainText())
-        ast = self.parser.parse(self.textSrc.toPlainText())
-        self.textAsm.setText(ast)
+        parser = CParser()
+        ast = parser.parse(self.textSrc.toPlainText())
+        self.textAST.setText(ast.toString(attrnames=True, nodenames=True))
+        translator = CTranslator()
+        translator.visit(ast)
+        codes = translator.get_codes()
+        code_text = ''
+        for code in codes:
+            code_text += str(code) + '\n'
+        self.textCode.setText(code_text)
+        codes = translator.get_codes()
+        tables = translator.get_tables()
+        assembler = CAssembler(tables)
+        asm = assembler.asm(codes)
+        self.textAsm.setText(asm)
+        with open('hello.s', 'w') as f:
+            f.write(asm)
+        os.system('gcc {filename} -o hello.exe'.format(filename='hello.s'))
+        self.statusBar().showMessage('编译完成！请点击运行程序。')
+
+    def run(self):
+        result = os.popen('hello.exe')
+        self.textResult.setText(result.read())
+        self.statusBar().showMessage('已成功运行！')
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -92,8 +92,32 @@ class Node(object):
                 showcoord=showcoord,
                 _my_node_name=child_name)
 
-    def toString(self):
-        pass
+    def toString(self, offset=0, attrnames=False, nodenames=False, showcoord=False, _my_node_name=None):
+        buf = ""
+        lead = ' ' * offset
+        if nodenames and _my_node_name is not None:
+            buf += (lead + self.__class__.__name__ + ' <' + _my_node_name + '>: ')
+        else:
+            buf += (lead + self.__class__.__name__ + ': ')
+        if self.attr_names:
+            if attrnames:
+                nvlist = [(n, getattr(self, n)) for n in self.attr_names]
+                attrstr = ', '.join('%s=%s' % nv for nv in nvlist)
+            else:
+                vlist = [getattr(self, n) for n in self.attr_names]
+                attrstr = ', '.join('%s' % v for v in vlist)
+            buf += attrstr
+        if showcoord:
+            buf += (' (at %s)' % self.coord)
+        buf += '\n'
+        for (child_name, child) in self.children():
+            buf += child.toString(
+                offset=offset + 2,
+                attrnames=attrnames,
+                nodenames=nodenames,
+                showcoord=showcoord,
+                _my_node_name=child_name)
+        return buf
 
 class NodeVisitor(object):
     """ A base NodeVisitor class for visiting c_ast nodes.
